@@ -2,21 +2,23 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flower Bouquet for You 💐</title>
+    <!-- Crucial for iPhone: prevents zooming and handles the notch -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>32nd Montsary na namin ng babi ko</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <canvas id="flowerCanvas"></canvas>
     
-    <!-- Letter Modal -->
     <div id="letterModal" class="modal">
         <div class="modal-content">
-            <h2>A Letter For You 💌</h2>
+            <h2>A Letter For You</h2>
             <div class="letter-container">
                 <div id="letterText" class="letter-text"></div>
             </div>
-            <button id="closeBtn" class="close-btn" style="display: none;">Close Window 💌</button>
+            <button id="closeBtn" class="close-btn">Close Window</button>
         </div>
     </div>
 
