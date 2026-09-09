@@ -233,7 +233,6 @@ let currentGame = null, gameLoopId = null;
 const handleFinish = () => {
     document.getElementById('letterModal').classList.remove('show');
     startFireworks();
-    // Force button to show with high z-index
     hamburgerBtn.style.display = 'flex';
     hamburgerBtn.style.zIndex = '9999';
 };
@@ -268,10 +267,30 @@ function startGame(gameType) {
     else if (gameType === 'memory') initMemory();
 }
 
-// --- SNAKE GAME ---
+// Helper to get touch coordinates relative to canvas
+function getTouchPos(e) {
+    const rect = gameCanvas.getBoundingClientRect();
+    const scaleX = gameCanvas.width / rect.width;
+    const scaleY = gameCanvas.height / rect.height;
+    return {
+        x: (e.touches[0].clientX - rect.left) * scaleX,
+        y: (e.touches[0].clientY - rect.top) * scaleY
+    };
+}
+function getClickPos(e) {
+    const rect = gameCanvas.getBoundingClientRect();
+    const scaleX = gameCanvas.width / rect.width;
+    const scaleY = gameCanvas.height / rect.height;
+    return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY
+    };
+}
+
+// --- SNAKE GAME (Improved UI) ---
 function initSnake() {
-    gameTitle.textContent = ' Snake';
-    gameInstructions.textContent = 'Swipe to move. Eat the hearts!';
+    gameTitle.textContent = '🐍 Snake';
+    gameInstructions.textContent = 'Swipe to move. Eat the glowing red food!';
     gameScore.textContent = 'Score: 0';
     
     const gridSize = 15;
@@ -293,13 +312,23 @@ function initSnake() {
     };
 
     function drawSnake() {
+        // Draw background grid for better visibility
         gameCtx.fillStyle = '#0d020d'; gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
-        gameCtx.fillStyle = '#ff1493'; gameCtx.font = '14px Arial'; gameCtx.textAlign = 'center'; gameCtx.textBaseline = 'middle';
-        gameCtx.fillText('❤️', food.x * gridSize + gridSize/2, food.y * gridSize + gridSize/2);
+        gameCtx.strokeStyle = '#1a0a1a'; gameCtx.lineWidth = 1;
+        for(let i=0; i<tileCountX; i++) { gameCtx.beginPath(); gameCtx.moveTo(i*gridSize, 0); gameCtx.lineTo(i*gridSize, gameCanvas.height); gameCtx.stroke(); }
+        for(let i=0; i<tileCountY; i++) { gameCtx.beginPath(); gameCtx.moveTo(0, i*gridSize); gameCtx.lineTo(gameCanvas.width, i*gridSize); gameCtx.stroke(); }
 
+        // Draw glowing food
+        gameCtx.shadowBlur = 15;
+        gameCtx.shadowColor = '#ff0000';
+        gameCtx.fillStyle = '#ff0000';
+        gameCtx.fillRect(food.x * gridSize + 1, food.y * gridSize + 1, gridSize - 2, gridSize - 2);
+        gameCtx.shadowBlur = 0;
+
+        // Draw snake
         snake.forEach((part, index) => {
             gameCtx.fillStyle = index === 0 ? '#2ed057' : '#1a8a3a';
-            gameCtx.fillRect(part.x * gridSize, part.y * gridSize, gridSize - 1, gridSize - 1);
+            gameCtx.fillRect(part.x * gridSize + 1, part.y * gridSize + 1, gridSize - 2, gridSize - 2);
         });
 
         const head = { x: snake[0].x + dx, y: snake[0].y + dy };
@@ -323,7 +352,7 @@ function initSnake() {
     snakeLoop();
 }
 
-// --- FLAPPY BIRD GAME ---
+// --- FLAPPY BIRD GAME (Improved Bird & Pipes) ---
 function initFlappy() {
     gameTitle.textContent = '🐦 Flappy Bird';
     gameInstructions.textContent = 'Tap to jump! Avoid the pipes.';
@@ -337,16 +366,33 @@ function initFlappy() {
     gameCanvas.ontouchstart = jump;
     gameCanvas.onclick = jump;
 
+    function drawBird(x, y, r) {
+        // Body
+        gameCtx.fillStyle = '#ffeb3b'; gameCtx.beginPath(); gameCtx.arc(x, y, r, 0, Math.PI*2); gameCtx.fill();
+        // Eye
+        gameCtx.fillStyle = 'white'; gameCtx.beginPath(); gameCtx.arc(x + 4, y - 4, 5, 0, Math.PI*2); gameCtx.fill();
+        gameCtx.fillStyle = 'black'; gameCtx.beginPath(); gameCtx.arc(x + 6, y - 4, 2, 0, Math.PI*2); gameCtx.fill();
+        // Beak
+        gameCtx.fillStyle = '#ff9800'; gameCtx.beginPath(); gameCtx.moveTo(x + 8, y); gameCtx.lineTo(x + 16, y + 3); gameCtx.lineTo(x + 8, y + 6); gameCtx.fill();
+        // Wing
+        gameCtx.fillStyle = '#fbc02d'; gameCtx.beginPath(); gameCtx.ellipse(x - 2, y + 4, 6, 4, 0, 0, Math.PI*2); gameCtx.fill();
+    }
+
+    function drawPipe(x, topH) {
+        gameCtx.fillStyle = '#2ed057';
+        // Top pipe
+        gameCtx.fillRect(x, 0, pipeWidth, topH);
+        gameCtx.fillRect(x - 5, topH - 20, pipeWidth + 10, 20); // Cap
+        // Bottom pipe
+        gameCtx.fillRect(x, topH + pipeGap, pipeWidth, gameCanvas.height - topH - pipeGap);
+        gameCtx.fillRect(x - 5, topH + pipeGap, pipeWidth + 10, 20); // Cap
+    }
+
     function drawFlappy() {
         gameCtx.fillStyle = '#0d020d'; gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
         
-        gameCtx.fillStyle = '#2ed057';
-        pipes.forEach(p => {
-            gameCtx.fillRect(p.x, 0, pipeWidth, p.top);
-            gameCtx.fillRect(p.x, p.top + pipeGap, pipeWidth, gameCanvas.height - p.top - pipeGap);
-        });
-
-        gameCtx.fillStyle = '#ffeb3b'; gameCtx.beginPath(); gameCtx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2); gameCtx.fill();
+        pipes.forEach(p => drawPipe(p.x, p.top));
+        drawBird(bird.x, bird.y, bird.radius);
 
         bird.velocity += gravity; bird.y += bird.velocity;
         frameCount++;
@@ -381,50 +427,44 @@ function initFlappy() {
     flappyLoop();
 }
 
-// --- TAP THE HEART GAME ---
+// --- TAP THE HEART GAME (Fixed) ---
 function initTapHeart() {
     gameTitle.textContent = '💖 Tap the Heart';
     gameInstructions.textContent = 'Tap the hearts before they disappear!';
     gameScore.textContent = 'Score: 0';
 
     let hearts = [], score = 0, spawnRate = 60, frameCount = 0;
-    let touchStartX = 0, touchStartY = 0;
 
-    gameCanvas.ontouchstart = (e) => {
-        e.preventDefault();
-        const rect = gameCanvas.getBoundingClientRect();
-        const scaleX = gameCanvas.width / rect.width;
-        const scaleY = gameCanvas.height / rect.height;
-        const tx = (e.touches[0].clientX - rect.left) * scaleX;
-        const ty = (e.touches[0].clientY - rect.top) * scaleY;
+    function drawHeartShape(ctx, x, y, size, color) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        const topCurveHeight = size * 0.3;
+        ctx.moveTo(x, y + topCurveHeight);
+        // top left curve
+        ctx.bezierCurveTo(x, y, x - size / 2, y, x - size / 2, y + topCurveHeight);
+        // bottom left curve
+        ctx.bezierCurveTo(x - size / 2, y + (size + topCurveHeight) / 2, x, y + (size + topCurveHeight) / 2, x, y + size);
+        // bottom right curve
+        ctx.bezierCurveTo(x, y + (size + topCurveHeight) / 2, x + size / 2, y + (size + topCurveHeight) / 2, x + size / 2, y + topCurveHeight);
+        // top right curve
+        ctx.bezierCurveTo(x + size / 2, y, x, y, x, y + topCurveHeight);
+        ctx.fill();
+    }
 
+    const handleTap = (tx, ty) => {
         for (let i = hearts.length - 1; i >= 0; i--) {
             const h = hearts[i];
             const dist = Math.hypot(tx - h.x, ty - h.y);
-            if (dist < h.radius + 10) {
+            if (dist < h.size) {
                 score++; gameScore.textContent = 'Score: ' + score;
                 hearts.splice(i, 1);
-                break; // Only tap one at a time
+                break; 
             }
         }
     };
-    gameCanvas.onclick = (e) => {
-        const rect = gameCanvas.getBoundingClientRect();
-        const scaleX = gameCanvas.width / rect.width;
-        const scaleY = gameCanvas.height / rect.height;
-        const tx = (e.clientX - rect.left) * scaleX;
-        const ty = (e.clientY - rect.top) * scaleY;
 
-        for (let i = hearts.length - 1; i >= 0; i--) {
-            const h = hearts[i];
-            const dist = Math.hypot(tx - h.x, ty - h.y);
-            if (dist < h.radius + 10) {
-                score++; gameScore.textContent = 'Score: ' + score;
-                hearts.splice(i, 1);
-                break;
-            }
-        }
-    };
+    gameCanvas.ontouchstart = (e) => { e.preventDefault(); const pos = getTouchPos(e); handleTap(pos.x, pos.y); };
+    gameCanvas.onclick = (e) => { const pos = getClickPos(e); handleTap(pos.x, pos.y); };
 
     function drawTap() {
         gameCtx.fillStyle = '#0d020d'; gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
@@ -432,13 +472,12 @@ function initTapHeart() {
         frameCount++;
         if (frameCount % spawnRate === 0) {
             hearts.push({
-                x: Math.random() * (gameCanvas.width - 40) + 20,
-                y: Math.random() * (gameCanvas.height - 40) + 20,
-                radius: 20,
-                life: 60, // frames before disappearing
-                maxLife: 60
+                x: Math.random() * (gameCanvas.width - 60) + 30,
+                y: Math.random() * (gameCanvas.height - 60) + 30,
+                size: 25,
+                life: 60, maxLife: 60
             });
-            if (spawnRate > 20) spawnRate -= 1; // Get faster
+            if (spawnRate > 20) spawnRate -= 1;
         }
 
         for (let i = hearts.length - 1; i >= 0; i--) {
@@ -447,11 +486,7 @@ function initTapHeart() {
             if (h.life <= 0) { hearts.splice(i, 1); continue; }
 
             gameCtx.globalAlpha = h.life / h.maxLife;
-            gameCtx.fillStyle = '#ff1493';
-            gameCtx.font = '30px Arial';
-            gameCtx.textAlign = 'center';
-            gameCtx.textBaseline = 'middle';
-            gameCtx.fillText('', h.x, h.y);
+            drawHeartShape(gameCtx, h.x, h.y - h.size/2, h.size, '#ff1493');
             gameCtx.globalAlpha = 1;
         }
     }
@@ -464,15 +499,15 @@ function initTapHeart() {
     tapLoop();
 }
 
-// --- MEMORY MATCH GAME ---
+// --- MEMORY MATCH GAME (Fixed Emojis) ---
 function initMemory() {
     gameTitle.textContent = '🧠 Memory Match';
     gameInstructions.textContent = 'Find all matching pairs!';
     gameScore.textContent = 'Moves: 0';
 
-    const emojis = ['', '💖', '🌻', '🌷', '💐', '', '💌', '💍'];
+    // Using standard emojis with a fallback font stack to ensure they render
+    const emojis = ['❤️', '🌹', '🍫', '💍', '💌', '🧸', '🎁', '💖'];
     const cards = [...emojis, ...emojis];
-    // Shuffle
     for (let i = cards.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [cards[i], cards[j]] = [cards[j], cards[i]];
@@ -483,25 +518,7 @@ function initMemory() {
     const cardH = gameCanvas.height / rows;
     let flipped = [], matched = [], moves = 0, canFlip = true;
 
-    gameCanvas.ontouchstart = (e) => {
-        e.preventDefault();
-        const rect = gameCanvas.getBoundingClientRect();
-        const scaleX = gameCanvas.width / rect.width;
-        const scaleY = gameCanvas.height / rect.height;
-        const tx = (e.touches[0].clientX - rect.left) * scaleX;
-        const ty = (e.touches[0].clientY - rect.top) * scaleY;
-        handleCardTap(tx, ty);
-    };
-    gameCanvas.onclick = (e) => {
-        const rect = gameCanvas.getBoundingClientRect();
-        const scaleX = gameCanvas.width / rect.width;
-        const scaleY = gameCanvas.height / rect.height;
-        const tx = (e.clientX - rect.left) * scaleX;
-        const ty = (e.clientY - rect.top) * scaleY;
-        handleCardTap(tx, ty);
-    };
-
-    function handleCardTap(tx, ty) {
+    const handleCardTap = (tx, ty) => {
         if (!canFlip) return;
         const col = Math.floor(tx / cardW);
         const row = Math.floor(ty / cardH);
@@ -533,11 +550,19 @@ function initMemory() {
                 }, 800);
             }
         }
-    }
+    };
+
+    gameCanvas.ontouchstart = (e) => { e.preventDefault(); const pos = getTouchPos(e); handleCardTap(pos.x, pos.y); };
+    gameCanvas.onclick = (e) => { const pos = getClickPos(e); handleCardTap(pos.x, pos.y); };
 
     function drawMemory() {
         gameCtx.fillStyle = '#0d020d'; gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
         
+        // Force emoji font rendering
+        gameCtx.font = '28px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+        gameCtx.textAlign = 'center';
+        gameCtx.textBaseline = 'middle';
+
         for (let i = 0; i < 16; i++) {
             const col = i % cols;
             const row = Math.floor(i / cols);
@@ -549,16 +574,15 @@ function initMemory() {
             if (matched.includes(i) || flipped.includes(i)) {
                 gameCtx.fillStyle = '#1a051a';
                 gameCtx.fillRect(x, y, w, h);
-                gameCtx.font = '24px Arial';
-                gameCtx.textAlign = 'center';
-                gameCtx.textBaseline = 'middle';
-                gameCtx.fillText(cards[i], x + w/2, y + h/2);
+                gameCtx.fillStyle = '#fff';
+                gameCtx.fillText(cards[i], x + w/2, y + h/2 + 2);
             } else {
                 gameCtx.fillStyle = '#ff1493';
                 gameCtx.fillRect(x, y, w, h);
                 gameCtx.fillStyle = '#fff';
-                gameCtx.font = '20px Arial';
-                gameCtx.fillText('?', x + w/2, y + h/2);
+                gameCtx.font = '24px Arial';
+                gameCtx.fillText('?', x + w/2, y + h/2 + 2);
+                gameCtx.font = '28px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
             }
         }
     }
