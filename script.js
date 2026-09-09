@@ -1,5 +1,5 @@
 // ==========================================
-// FLOWER & FIREWORKS LOGIC (Existing)
+// FLOWER & FIREWORKS LOGIC
 // ==========================================
 const canvas = document.getElementById('flowerCanvas');
 const ctx = canvas.getContext('2d');
@@ -100,8 +100,6 @@ function drawCompletedSideFlower(index) {
 function drawHeartsAndText() {
     ctx.fillStyle = '#ff99cc'; ctx.font = `bold ${12 * layoutScale}px Courier`; ctx.textAlign = 'center';
     heartsArray.forEach(h => ctx.fillText('<3', h.x, h.y));
-    ctx.fillStyle = 'white'; ctx.font = `italic ${12 * layoutScale}px Arial`;
-    ctx.fillText('Tap anywhere', centerX, logicalHeight - 30 * layoutScale);
 }
 
 function renderFrame() {
@@ -220,7 +218,7 @@ function animateFireworks() {
 }
 
 // ==========================================
-// HAMBURGER MENU & GAMES LOGIC (New)
+// HAMBURGER MENU & GAMES LOGIC
 // ==========================================
 const hamburgerBtn = document.getElementById('hamburgerBtn');
 const gameMenu = document.getElementById('gameMenu');
@@ -235,16 +233,20 @@ let currentGame = null, gameLoopId = null;
 const handleFinish = () => {
     document.getElementById('letterModal').classList.remove('show');
     startFireworks();
-    hamburgerBtn.style.display = 'flex'; // Show hamburger after letter closes
+    // Force button to show with high z-index
+    hamburgerBtn.style.display = 'flex';
+    hamburgerBtn.style.zIndex = '9999';
 };
 
 document.getElementById('closeBtn').addEventListener('click', handleFinish);
 document.getElementById('closeBtn').addEventListener('touchend', (e) => { e.preventDefault(); handleFinish(); });
 
-hamburgerBtn.addEventListener('click', () => { gameMenu.classList.toggle('show'); });
+hamburgerBtn.addEventListener('click', (e) => { e.stopPropagation(); gameMenu.classList.toggle('show'); });
+document.addEventListener('click', (e) => { if (!gameMenu.contains(e.target) && e.target !== hamburgerBtn) gameMenu.classList.remove('show'); });
 
 function closeGame() {
     if (gameLoopId) cancelAnimationFrame(gameLoopId);
+    if (gameLoopId) clearTimeout(gameLoopId);
     gameModal.classList.remove('show');
     currentGame = null;
 }
@@ -256,18 +258,19 @@ function startGame(gameType) {
     gameModal.classList.add('show');
     currentGame = gameType;
     
-    // Setup canvas size
     const size = Math.min(window.innerWidth * 0.9, 350);
     gameCanvas.width = size;
-    gameCanvas.height = size * 1.2;
+    gameCanvas.height = size;
 
     if (gameType === 'snake') initSnake();
     else if (gameType === 'flappy') initFlappy();
+    else if (gameType === 'tap') initTapHeart();
+    else if (gameType === 'memory') initMemory();
 }
 
 // --- SNAKE GAME ---
 function initSnake() {
-    gameTitle.textContent = '🐍 Snake';
+    gameTitle.textContent = ' Snake';
     gameInstructions.textContent = 'Swipe to move. Eat the hearts!';
     gameScore.textContent = 'Score: 0';
     
@@ -280,34 +283,29 @@ function initSnake() {
     let dx = 0, dy = 0, score = 0;
     let touchStartX = 0, touchStartY = 0;
 
-    gameCanvas.ontouchstart = (e) => { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; };
+    gameCanvas.ontouchstart = (e) => { e.preventDefault(); touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; };
     gameCanvas.ontouchend = (e) => {
+        e.preventDefault();
         const touchEndX = e.changedTouches[0].clientX, touchEndY = e.changedTouches[0].clientY;
         const diffX = touchEndX - touchStartX, diffY = touchEndY - touchStartY;
-        if (Math.abs(diffX) > Math.abs(diffY)) { if (diffX > 0 && dx === 0) { dx = 1; dy = 0; } else if (diffX < 0 && dx === 0) { dx = -1; dy = 0; } }
-        else { if (diffY > 0 && dy === 0) { dx = 0; dy = 1; } else if (diffY < 0 && dy === 0) { dx = 0; dy = -1; } }
+        if (Math.abs(diffX) > Math.abs(diffY)) { if (diffX > 20 && dx === 0) { dx = 1; dy = 0; } else if (diffX < -20 && dx === 0) { dx = -1; dy = 0; } }
+        else { if (diffY > 20 && dy === 0) { dx = 0; dy = 1; } else if (diffY < -20 && dy === 0) { dx = 0; dy = -1; } }
     };
 
     function drawSnake() {
         gameCtx.fillStyle = '#0d020d'; gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
-        
-        // Draw food (heart)
-        gameCtx.fillStyle = '#ff1493'; gameCtx.font = '12px Arial'; gameCtx.textAlign = 'center';
-        gameCtx.fillText('❤️', food.x * gridSize + gridSize/2, food.y * gridSize + gridSize/2 + 4);
+        gameCtx.fillStyle = '#ff1493'; gameCtx.font = '14px Arial'; gameCtx.textAlign = 'center'; gameCtx.textBaseline = 'middle';
+        gameCtx.fillText('❤️', food.x * gridSize + gridSize/2, food.y * gridSize + gridSize/2);
 
-        // Draw snake
         snake.forEach((part, index) => {
             gameCtx.fillStyle = index === 0 ? '#2ed057' : '#1a8a3a';
             gameCtx.fillRect(part.x * gridSize, part.y * gridSize, gridSize - 1, gridSize - 1);
         });
 
         const head = { x: snake[0].x + dx, y: snake[0].y + dy };
-        
-        // Wrap around walls
         if (head.x < 0) head.x = tileCountX - 1; if (head.x >= tileCountX) head.x = 0;
         if (head.y < 0) head.y = tileCountY - 1; if (head.y >= tileCountY) head.y = 0;
 
-        // Check self collision
         for (let i = 0; i < snake.length; i++) { if (head.x === snake[i].x && head.y === snake[i].y) { dx = 0; dy = 0; snake = [{ x: Math.floor(tileCountX / 2), y: Math.floor(tileCountY / 2) }]; score = 0; gameScore.textContent = 'Score: 0'; return; } }
 
         snake.unshift(head);
@@ -320,7 +318,7 @@ function initSnake() {
     function snakeLoop() {
         if (currentGame !== 'snake') return;
         drawSnake();
-        gameLoopId = setTimeout(() => { requestAnimationFrame(snakeLoop); }, 100);
+        gameLoopId = setTimeout(() => { requestAnimationFrame(snakeLoop); }, 120);
     }
     snakeLoop();
 }
@@ -332,53 +330,46 @@ function initFlappy() {
     gameScore.textContent = 'Score: 0';
 
     let bird = { x: gameCanvas.width * 0.3, y: gameCanvas.height / 2, velocity: 0, radius: 12 };
-    let pipes = [], pipeWidth = 40, pipeGap = 120, pipeSpeed = 2, score = 0, frameCount = 0;
-    let gravity = 0.4, jumpStrength = -7;
+    let pipes = [], pipeWidth = 40, pipeGap = 130, pipeSpeed = 2.5, score = 0, frameCount = 0;
+    let gravity = 0.5, jumpStrength = -7;
 
-    gameCanvas.ontouchstart = (e) => { e.preventDefault(); bird.velocity = jumpStrength; };
-    gameCanvas.onclick = () => { bird.velocity = jumpStrength; };
+    const jump = (e) => { if(e) e.preventDefault(); bird.velocity = jumpStrength; };
+    gameCanvas.ontouchstart = jump;
+    gameCanvas.onclick = jump;
 
     function drawFlappy() {
         gameCtx.fillStyle = '#0d020d'; gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
         
-        // Draw pipes
         gameCtx.fillStyle = '#2ed057';
         pipes.forEach(p => {
             gameCtx.fillRect(p.x, 0, pipeWidth, p.top);
             gameCtx.fillRect(p.x, p.top + pipeGap, pipeWidth, gameCanvas.height - p.top - pipeGap);
         });
 
-        // Draw bird
         gameCtx.fillStyle = '#ffeb3b'; gameCtx.beginPath(); gameCtx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2); gameCtx.fill();
 
-        // Physics
         bird.velocity += gravity; bird.y += bird.velocity;
         frameCount++;
 
-        // Add pipes
-        if (frameCount % 90 === 0) {
-            const topHeight = Math.random() * (gameCanvas.height - pipeGap - 40) + 20;
+        if (frameCount % 100 === 0) {
+            const topHeight = Math.random() * (gameCanvas.height - pipeGap - 60) + 30;
             pipes.push({ x: gameCanvas.width, top: topHeight });
         }
 
-        // Move pipes & check collision
         for (let i = pipes.length - 1; i >= 0; i--) {
             pipes[i].x -= pipeSpeed;
             if (pipes[i].x + pipeWidth < 0) pipes.splice(i, 1);
             
-            // Collision
             if (bird.x + bird.radius > pipes[i].x && bird.x - bird.radius < pipes[i].x + pipeWidth) {
                 if (bird.y - bird.radius < pipes[i].top || bird.y + bird.radius > pipes[i].top + pipeGap) {
-                    bird.y = gameCanvas.height / 2; bird.velocity = 0; pipes = []; score = 0; gameScore.textContent = 'Score: 0';
+                    bird.y = gameCanvas.height / 2; bird.velocity = 0; pipes = []; score = 0; gameScore.textContent = 'Score: 0'; frameCount = 0;
                 }
             }
-            // Score
-            if (pipes[i] && pipes[i].x + pipeWidth === Math.floor(bird.x)) { score++; gameScore.textContent = 'Score: ' + score; }
+            if (pipes[i] && Math.abs(pipes[i].x - bird.x) < pipeSpeed) { score++; gameScore.textContent = 'Score: ' + score; }
         }
 
-        // Floor/Ceiling collision
         if (bird.y + bird.radius > gameCanvas.height || bird.y - bird.radius < 0) {
-            bird.y = gameCanvas.height / 2; bird.velocity = 0; pipes = []; score = 0; gameScore.textContent = 'Score: 0';
+            bird.y = gameCanvas.height / 2; bird.velocity = 0; pipes = []; score = 0; gameScore.textContent = 'Score: 0'; frameCount = 0;
         }
     }
 
@@ -388,6 +379,196 @@ function initFlappy() {
         gameLoopId = requestAnimationFrame(flappyLoop);
     }
     flappyLoop();
+}
+
+// --- TAP THE HEART GAME ---
+function initTapHeart() {
+    gameTitle.textContent = '💖 Tap the Heart';
+    gameInstructions.textContent = 'Tap the hearts before they disappear!';
+    gameScore.textContent = 'Score: 0';
+
+    let hearts = [], score = 0, spawnRate = 60, frameCount = 0;
+    let touchStartX = 0, touchStartY = 0;
+
+    gameCanvas.ontouchstart = (e) => {
+        e.preventDefault();
+        const rect = gameCanvas.getBoundingClientRect();
+        const scaleX = gameCanvas.width / rect.width;
+        const scaleY = gameCanvas.height / rect.height;
+        const tx = (e.touches[0].clientX - rect.left) * scaleX;
+        const ty = (e.touches[0].clientY - rect.top) * scaleY;
+
+        for (let i = hearts.length - 1; i >= 0; i--) {
+            const h = hearts[i];
+            const dist = Math.hypot(tx - h.x, ty - h.y);
+            if (dist < h.radius + 10) {
+                score++; gameScore.textContent = 'Score: ' + score;
+                hearts.splice(i, 1);
+                break; // Only tap one at a time
+            }
+        }
+    };
+    gameCanvas.onclick = (e) => {
+        const rect = gameCanvas.getBoundingClientRect();
+        const scaleX = gameCanvas.width / rect.width;
+        const scaleY = gameCanvas.height / rect.height;
+        const tx = (e.clientX - rect.left) * scaleX;
+        const ty = (e.clientY - rect.top) * scaleY;
+
+        for (let i = hearts.length - 1; i >= 0; i--) {
+            const h = hearts[i];
+            const dist = Math.hypot(tx - h.x, ty - h.y);
+            if (dist < h.radius + 10) {
+                score++; gameScore.textContent = 'Score: ' + score;
+                hearts.splice(i, 1);
+                break;
+            }
+        }
+    };
+
+    function drawTap() {
+        gameCtx.fillStyle = '#0d020d'; gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+        
+        frameCount++;
+        if (frameCount % spawnRate === 0) {
+            hearts.push({
+                x: Math.random() * (gameCanvas.width - 40) + 20,
+                y: Math.random() * (gameCanvas.height - 40) + 20,
+                radius: 20,
+                life: 60, // frames before disappearing
+                maxLife: 60
+            });
+            if (spawnRate > 20) spawnRate -= 1; // Get faster
+        }
+
+        for (let i = hearts.length - 1; i >= 0; i--) {
+            const h = hearts[i];
+            h.life--;
+            if (h.life <= 0) { hearts.splice(i, 1); continue; }
+
+            gameCtx.globalAlpha = h.life / h.maxLife;
+            gameCtx.fillStyle = '#ff1493';
+            gameCtx.font = '30px Arial';
+            gameCtx.textAlign = 'center';
+            gameCtx.textBaseline = 'middle';
+            gameCtx.fillText('', h.x, h.y);
+            gameCtx.globalAlpha = 1;
+        }
+    }
+
+    function tapLoop() {
+        if (currentGame !== 'tap') return;
+        drawTap();
+        gameLoopId = requestAnimationFrame(tapLoop);
+    }
+    tapLoop();
+}
+
+// --- MEMORY MATCH GAME ---
+function initMemory() {
+    gameTitle.textContent = '🧠 Memory Match';
+    gameInstructions.textContent = 'Find all matching pairs!';
+    gameScore.textContent = 'Moves: 0';
+
+    const emojis = ['', '💖', '🌻', '🌷', '💐', '', '💌', '💍'];
+    const cards = [...emojis, ...emojis];
+    // Shuffle
+    for (let i = cards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cards[i], cards[j]] = [cards[j], cards[i]];
+    }
+
+    const cols = 4, rows = 4;
+    const cardW = gameCanvas.width / cols;
+    const cardH = gameCanvas.height / rows;
+    let flipped = [], matched = [], moves = 0, canFlip = true;
+
+    gameCanvas.ontouchstart = (e) => {
+        e.preventDefault();
+        const rect = gameCanvas.getBoundingClientRect();
+        const scaleX = gameCanvas.width / rect.width;
+        const scaleY = gameCanvas.height / rect.height;
+        const tx = (e.touches[0].clientX - rect.left) * scaleX;
+        const ty = (e.touches[0].clientY - rect.top) * scaleY;
+        handleCardTap(tx, ty);
+    };
+    gameCanvas.onclick = (e) => {
+        const rect = gameCanvas.getBoundingClientRect();
+        const scaleX = gameCanvas.width / rect.width;
+        const scaleY = gameCanvas.height / rect.height;
+        const tx = (e.clientX - rect.left) * scaleX;
+        const ty = (e.clientY - rect.top) * scaleY;
+        handleCardTap(tx, ty);
+    };
+
+    function handleCardTap(tx, ty) {
+        if (!canFlip) return;
+        const col = Math.floor(tx / cardW);
+        const row = Math.floor(ty / cardH);
+        const index = row * cols + col;
+
+        if (index < 0 || index >= 16) return;
+        if (flipped.includes(index) || matched.includes(index)) return;
+
+        flipped.push(index);
+        drawMemory();
+
+        if (flipped.length === 2) {
+            canFlip = false;
+            moves++;
+            gameScore.textContent = 'Moves: ' + moves;
+            
+            if (cards[flipped[0]] === cards[flipped[1]]) {
+                matched.push(...flipped);
+                flipped = [];
+                canFlip = true;
+                if (matched.length === 16) {
+                    gameInstructions.textContent = 'You won in ' + moves + ' moves!';
+                }
+            } else {
+                setTimeout(() => {
+                    flipped = [];
+                    drawMemory();
+                    canFlip = true;
+                }, 800);
+            }
+        }
+    }
+
+    function drawMemory() {
+        gameCtx.fillStyle = '#0d020d'; gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+        
+        for (let i = 0; i < 16; i++) {
+            const col = i % cols;
+            const row = Math.floor(i / cols);
+            const x = col * cardW + 5;
+            const y = row * cardH + 5;
+            const w = cardW - 10;
+            const h = cardH - 10;
+
+            if (matched.includes(i) || flipped.includes(i)) {
+                gameCtx.fillStyle = '#1a051a';
+                gameCtx.fillRect(x, y, w, h);
+                gameCtx.font = '24px Arial';
+                gameCtx.textAlign = 'center';
+                gameCtx.textBaseline = 'middle';
+                gameCtx.fillText(cards[i], x + w/2, y + h/2);
+            } else {
+                gameCtx.fillStyle = '#ff1493';
+                gameCtx.fillRect(x, y, w, h);
+                gameCtx.fillStyle = '#fff';
+                gameCtx.font = '20px Arial';
+                gameCtx.fillText('?', x + w/2, y + h/2);
+            }
+        }
+    }
+
+    function memoryLoop() {
+        if (currentGame !== 'memory') return;
+        drawMemory();
+        gameLoopId = requestAnimationFrame(memoryLoop);
+    }
+    memoryLoop();
 }
 
 setTimeout(mainLoop, 500);
