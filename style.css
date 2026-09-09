@@ -17,36 +17,42 @@ body {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
 }
 
-/* Hamburger Button */
+/* Hamburger Button - Made larger and higher z-index */
 .hamburger-btn {
-    position: fixed; top: 20px; right: 20px; z-index: 1500;
-    background: rgba(255, 20, 147, 0.8); border: none; border-radius: 8px;
-    width: 44px; height: 44px; cursor: pointer;
-    display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px;
+    position: fixed; top: 20px; right: 20px; z-index: 9999;
+    background: rgba(255, 20, 147, 0.9); border: 2px solid #fff; border-radius: 12px;
+    width: 55px; height: 55px; cursor: pointer;
+    display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
 }
 .hamburger-btn span {
-    display: block; width: 24px; height: 3px; background: white; border-radius: 2px;
-    transition: all 0.3s;
+    display: block; width: 28px; height: 3px; background: white; border-radius: 2px;
 }
 
 /* Game Dropdown Menu */
 .game-menu {
-    position: fixed; top: 70px; right: 20px; z-index: 1500;
-    background: #1a051a; border: 2px solid #ff66b2; border-radius: 10px;
+    position: fixed; top: 85px; right: 20px; z-index: 9999;
+    background: #1a051a; border: 2px solid #ff66b2; border-radius: 12px;
     padding: 15px; display: none; flex-direction: column; gap: 10px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+    box-shadow: 0 5px 25px rgba(0,0,0,0.7); min-width: 180px;
 }
 .game-menu.show { display: flex; }
 .game-menu h3 { color: #ffb3d9; text-align: center; font-size: 16px; margin-bottom: 5px; }
 .game-btn {
-    background: #ff1493; color: white; border: none; border-radius: 6px;
-    padding: 12px; font-size: 16px; font-weight: bold; cursor: pointer;
+    background: #ff1493; color: white; border: none; border-radius: 8px;
+    padding: 12px; font-size: 15px; font-weight: bold; cursor: pointer; text-align: left;
 }
-.game-btn:active { background: #ff66b2; }
+.game-btn:active { background: #ff66b2; transform: scale(0.98); }
 
 /* Modals */
 .modal {
-    display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+    display: none; position: fixed; z-index: 5000; left: 0; top: 0;
     width: 100%; height: 100%; background-color: rgba(13, 2, 13, 0.95);
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
@@ -68,7 +74,7 @@ body {
 .letter-container::-webkit-scrollbar-thumb { background: #ff66b2; border-radius: 3px; }
 .letter-text { color: #ffb3d9; font-size: 15px; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word; }
 .close-btn {
-    width: 100%; padding: 12px; background-color: #ff1493; color: white;
+    width: 100%; padding: 14px; background-color: #ff1493; color: white;
     border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer;
 }
 .close-btn:active { background-color: #ff66b2; transform: scale(0.98); }
@@ -85,12 +91,12 @@ body {
 .game-header h3 { color: #ffb3d9; font-size: 18px; }
 .close-game-btn {
     background: #ff1493; color: white; border: none; border-radius: 50%;
-    width: 30px; height: 30px; font-size: 16px; cursor: pointer;
+    width: 32px; height: 32px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;
 }
-.game-instructions { color: #ff99cc; font-size: 12px; margin-bottom: 10px; text-align: center; }
+.game-instructions { color: #ff99cc; font-size: 13px; margin-bottom: 10px; text-align: center; }
 #gameCanvas {
     background: #0d020d; border: 1px solid #ff66b2; border-radius: 8px;
-    width: 100%; max-width: 350px; height: auto; aspect-ratio: 1 / 1.2;
-    touch-action: none;
+    width: 100%; max-width: 350px; height: auto; aspect-ratio: 1 / 1;
+    touch-action: none; display: block;
 }
-.game-score { color: #ffeb3b; font-size: 18px; font-weight: bold; margin-top: 10px; }
+.game-score { color: #ffeb3b; font-size: 20px; font-weight: bold; margin-top: 10px; }
