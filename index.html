@@ -2,16 +2,30 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- Crucial for iPhone: prevents zooming and handles the notch -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>32nd Montsary na namin ng babi ko</title>
+    <title>Flower Bouquet for You</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <canvas id="flowerCanvas"></canvas>
     
+    <!-- Hamburger Menu Button (Hidden initially) -->
+    <button id="hamburgerBtn" class="hamburger-btn" style="display: none;">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- Game Dropdown Menu -->
+    <div id="gameMenu" class="game-menu">
+        <h3>Choose a Game</h3>
+        <button class="game-btn" onclick="startGame('snake')"> Snake</button>
+        <button class="game-btn" onclick="startGame('flappy')"> Flappy Bird</button>
+    </div>
+
+    <!-- Letter Modal -->
     <div id="letterModal" class="modal">
         <div class="modal-content">
             <h2>A Letter For You</h2>
@@ -19,6 +33,19 @@
                 <div id="letterText" class="letter-text"></div>
             </div>
             <button id="closeBtn" class="close-btn">Close Window</button>
+        </div>
+    </div>
+
+    <!-- Game Modal -->
+    <div id="gameModal" class="modal game-modal">
+        <div class="game-modal-content">
+            <div class="game-header">
+                <h3 id="gameTitle">Game</h3>
+                <button id="closeGameBtn" class="close-game-btn"></button>
+            </div>
+            <p id="gameInstructions" class="game-instructions"></p>
+            <canvas id="gameCanvas"></canvas>
+            <div id="gameScore" class="game-score">Score: 0</div>
         </div>
     </div>
 
