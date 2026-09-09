@@ -1,0 +1,301 @@
+// Canvas Setup
+const canvas = document.getElementById('flowerCanvas');
+const ctx = canvas.getContext('2d');
+
+// Set canvas size
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// Utility Functions
+function toRadians(degrees) {
+    return degrees * Math.PI / 180;
+}
+
+function drawText(ctx, text, x, y, font = 'bold 8px Arial', color = 'white') {
+    ctx.font = font;
+    ctx.fillStyle = color;
+    ctx.textAlign = 'center';
+    ctx.fillText(text, x, y);
+}
+
+// Draw Petal Function
+function drawPetal(baseX, baseY, baseAngle, length, width, color, points = 20) {
+    const cosA = Math.cos(baseAngle);
+    const sinA = Math.sin(baseAngle);
+    
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    
+    for (let i = 0; i <= points; i++) {
+        const theta = (i * Math.PI) / points;
+        const out = length * Math.sin(theta);
+        const side = width * Math.sin(theta) * Math.cos(theta);
+        
+        const rx = out * cosA - side * sinA;
+        const ry = out * sinA + side * cosA;
+        
+        const x = baseX + rx;
+        const y = baseY + ry;
+        
+        if (i === 0) {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+        
+        // Draw "my love" text along the petal
+        if (i % 3 === 0) {
+            drawText(ctx, 'my love', x, y, 'bold 8px Arial', color);
+        }
+    }
+    ctx.stroke();
+}
+
+// Draw Leaf Function
+function drawLeaf(baseX, baseY, angleDeg, length, width) {
+    drawPetal(baseX, baseY, toRadians(angleDeg), length, width, '#2ed057', 22);
+}
+
+// Draw Simple Flower Function
+function drawSimpleFlower(centerX, centerY, petalLength, petalWidth, color, numPetals = 5) {
+    for (let i = 0; i < numPetals; i++) {
+        const angle = (360 / numPetals) * i;
+        const baseX = centerX + (petalLength * 0.2) * Math.cos(toRadians(angle));
+        const baseY = centerY + (petalLength * 0.2) * Math.sin(toRadians(angle));
+        drawPetal(baseX, baseY, toRadians(angle), petalLength, petalWidth, color);
+    }
+    
+    // Yellow center dot
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, petalWidth * 0.35, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffeb3b';
+    ctx.fill();
+}
+
+// Draw Stem Function
+function drawStem(startX, startY, endX, endY) {
+    ctx.strokeStyle = '#2ed057';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    
+    const midX = (startX + endX) / 2 + (Math.random() * 60 - 30);
+    const midY = (startY + endY) / 2;
+    
+    ctx.quadraticCurveTo(midX, midY, endX, endY);
+    ctx.stroke();
+}
+
+// Main Flower Rings Configuration
+const rings = [
+    { radius: 0, count: 4, length: 40, width: 15, color: '#ffebf2', offset: 45 },
+    { radius: 10, count: 5, length: 50, width: 25, color: '#ffb3d9', offset: 0 },
+    { radius: 20, count: 7, length: 70, width: 35, color: '#ff66b2', offset: 30 },
+    { radius: 30, count: 9, length: 90, width: 45, color: '#ff1493', offset: 15 },
+    { radius: 40, count: 12, length: 110, width: 55, color: '#c71585', offset: 0 }
+];
+
+// Small Flowers Configuration
+const smallFlowers = [
+    { x: -230, y: 80, color: '#ff0000' },
+    { x: -210, y: -10, color: '#ffeb3b' },
+    { x: -240, y: -100, color: '#ff69b4' },
+    { x: -190, y: 140, color: '#ff0000' },
+    { x: 230, y: 80, color: '#ffeb3b' },
+    { x: 210, y: -10, color: '#ff69b4' },
+    { x: 240, y: -100, color: '#ff0000' },
+    { x: 190, y: 140, color: '#ffeb3b' }
+];
+
+const centerX = canvas.width / 2;
+const centerY = canvas.height / 2;
+const stemBaseY = centerY + 100;
+
+// Animation Variables
+let currentRing = 0;
+let currentPetalInRing = 0;
+let currentSmallFlower = 0;
+let mainStemDrawn = false;
+let mainLeavesDrawn = false;
+let mainFlowerDrawn = false;
+let sideFlowersDrawn = false;
+let heartsDrawn = false;
+let letterShown = false;
+
+// Draw Main Stem
+function drawMainStem() {
+    ctx.strokeStyle = '#2ed057';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(centerX, stemBaseY);
+    ctx.lineTo(centerX, centerY - 100);
+    ctx.stroke();
+    mainStemDrawn = true;
+}
+
+// Draw Main Leaves
+function drawMainLeaves() {
+    drawLeaf(centerX, centerY - 70, 160, 45, 22);
+    drawLeaf(centerX, centerY, -20, 50, 25);
+    mainLeavesDrawn = true;
+}
+
+// Draw Main Flower
+function drawMainFlower() {
+    if (currentRing < rings.length) {
+        const ring = rings[currentRing];
+        if (currentPetalInRing < ring.count) {
+            const angle = (360 / ring.count) * currentPetalInRing + ring.offset;
+            const baseX = centerX + ring.radius * Math.cos(toRadians(angle));
+            const baseY = centerY + ring.radius * Math.sin(toRadians(angle));
+            drawPetal(baseX, baseY, toRadians(angle), ring.length, ring.width, ring.color);
+            currentPetalInRing++;
+        } else {
+            currentRing++;
+            currentPetalInRing = 0;
+        }
+    } else {
+        mainFlowerDrawn = true;
+    }
+}
+
+// Draw Side Flowers
+function drawSideFlowers() {
+    if (currentSmallFlower < smallFlowers.length) {
+        const flower = smallFlowers[currentSmallFlower];
+        const fx = centerX + flower.x;
+        const fy = centerY + flower.y;
+        
+        // Draw stem
+        drawStem(centerX, stemBaseY, fx, fy);
+        
+        // Draw leaf
+        const leafX = (centerX + fx) / 2;
+        const leafY = (stemBaseY + fy) / 2;
+        const leafAngle = Math.random() > 0.5 ? 150 : -30;
+        drawLeaf(leafX, leafY, leafAngle, 28, 13);
+        
+        // Draw flower
+        drawSimpleFlower(fx, fy, 38, 16, flower.color, 5);
+        
+        currentSmallFlower++;
+    } else {
+        sideFlowersDrawn = true;
+    }
+}
+
+// Draw Hearts
+function drawHearts() {
+    ctx.fillStyle = '#ff99cc';
+    ctx.font = 'bold 10px Courier';
+    ctx.textAlign = 'center';
+    
+    for (let i = 0; i < 12; i++) {
+        let x, y;
+        do {
+            x = Math.random() * canvas.width;
+            y = Math.random() * canvas.height;
+        } while (Math.hypot(x - centerX, y - centerY) <= 200);
+        
+        ctx.fillText('<3', x, y);
+    }
+    heartsDrawn = true;
+}
+
+// Draw Click Text
+function drawClickText() {
+    ctx.fillStyle = 'white';
+    ctx.font = 'italic 10px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Click anywhere to close', centerX, canvas.height - 30);
+}
+
+// Main Animation Loop
+function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    if (!mainStemDrawn) {
+        drawMainStem();
+    } else if (!mainLeavesDrawn) {
+        drawMainLeaves();
+    } else if (!mainFlowerDrawn) {
+        drawMainFlower();
+    } else if (!sideFlowersDrawn) {
+        drawSideFlowers();
+    } else if (!heartsDrawn) {
+        drawHearts();
+        drawClickText();
+        
+        // Show letter after a delay
+        if (!letterShown) {
+            setTimeout(showLetter, 1000);
+            letterShown = true;
+        }
+    }
+    
+    if (!heartsDrawn || !mainFlowerDrawn || !sideFlowersDrawn) {
+        requestAnimationFrame(animate);
+    }
+}
+
+// Letter Content
+const letterContent = `Hi babi ko,
+
+Thank you for being here with me even if I have huge flaws. September na ngayon which means malapit na birthday mo!!! ADVANCE HAPPY BIRTHDAY MA CHERIE!!!!
+
+Anyways, I love you babi ko I hope you like the small coding gift that I made. Syempre I would do more handmade gifts in the future with all the love that is needed. Still pacticing and hopefully mapantayan ko mga gawa mo😘😘😘, I love you babi ko!
+
+- Jed`;
+
+// Show Letter Modal
+function showLetter() {
+    const modal = document.getElementById('letterModal');
+    const letterText = document.getElementById('letterText');
+    const closeBtn = document.getElementById('closeBtn');
+    
+    modal.classList.add('show');
+    
+    // Typing animation
+    let index = 0;
+    letterText.textContent = '';
+    
+    function typeText() {
+        if (index < letterContent.length) {
+            letterText.textContent += letterContent.charAt(index);
+            index++;
+            
+            // Auto-scroll to bottom
+            const container = document.querySelector('.letter-container');
+            container.scrollTop = container.scrollHeight;
+            
+            setTimeout(typeText, 35);
+        } else {
+            // Show close button when typing is done
+            setTimeout(() => {
+                closeBtn.style.display = 'block';
+            }, 500);
+        }
+    }
+    
+    setTimeout(typeText, 500);
+}
+
+// Close modal when button is clicked
+document.getElementById('closeBtn').addEventListener('click', function() {
+    document.getElementById('letterModal').classList.remove('show');
+});
+
+// Close on canvas click (after animation)
+canvas.addEventListener('click', function() {
+    if (heartsDrawn) {
+        document.getElementById('letterModal').classList.remove('show');
+    }
+});
+
+// Start animation
+setTimeout(animate, 100);
